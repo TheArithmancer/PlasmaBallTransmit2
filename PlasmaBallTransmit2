@@ -1,0 +1,126 @@
+#include <Wire.h>
+#include <Adafruit_INA219.h>
+#include <RCSwitch.h>
+
+RCSwitch mySwitch433 = RCSwitch();
+RCSwitch mySwitch315 = RCSwitch();
+Adafruit_INA219 ina219;
+
+
+const int Transmitter433=2;
+const int Transmitter315=3;
+const float THRESHOLD=1.2;
+
+int start=5;
+float baselinePower=0;
+
+
+void setup(void) 
+{
+  Serial.begin(9600);
+
+  uint32_t currentFrequency;
+    
+  Serial.println("Hello!");
+  
+  ina219.begin();
+
+  // Transmitter is connected to Arduino Pin #10  
+  mySwitch433.enableTransmit(Transmitter433);
+  mySwitch315.enableTransmit(Transmitter315);
+
+  while (ina219.getPower_mW()<5) {
+    delay(10);  
+  }
+  
+  for (int i=0;i<10;i++) {
+    baselinePower += ina219.getPower_mW();
+    delay(10);
+  }
+  baselinePower=baselinePower/10;
+
+}
+
+void RingBell(void)
+{
+    /*// Magic Hat
+    mySwitch315.setPulseLength(325); //362
+    mySwitch315.setRepeatTransmit(15);
+    mySwitch315.send(2833332,24);
+    mySwitch315.send(5003716,24);
+*/
+ 
+    /*Serial.println("Switching maglock relay");
+    mySwitch433.setPulseLength(362); //295); //362
+    mySwitch433.setRepeatTransmit(15);
+    mySwitch433.send(3141032, 24); //Maglock
+*/
+    Serial.println("Ringing bell");
+    mySwitch433.setPulseLength(362); 
+    mySwitch433.setRepeatTransmit(15);
+    mySwitch433.send(12160932, 24); //Bell
+    
+}
+
+
+void loop(void) 
+{
+  float power_mW = 0;
+
+  for(int i=0;i<10;i++) {
+    power_mW += ina219.getPower_mW();
+    delay(10);
+  }
+  power_mW=power_mW/10;
+  
+ 
+  //Serial.print(power_mW); Serial.print("::"); Serial.println(baselinePower);
+  Serial.println(power_mW);
+  if (power_mW>THRESHOLD*baselinePower) {
+    RingBell();
+  }
+
+  delay(50);
+}
+
+
+
+
+
+
+
+
+
+
+void OldStuff(void) 
+{
+  float shuntvoltage = 0;
+  float busvoltage = 0;
+  float current_mA = 0;
+  float loadvoltage = 0;
+  float power_mW = 0;
+  shuntvoltage = ina219.getShuntVoltage_mV();
+  busvoltage = ina219.getBusVoltage_V();
+  current_mA = ina219.getCurrent_mA();
+  power_mW = ina219.getPower_mW();
+  loadvoltage = busvoltage + (shuntvoltage / 1000);
+  
+/*  Serial.print("Bus Voltage:   "); Serial.print(busvoltage); Serial.println(" V");
+  Serial.print("Shunt Voltage: "); Serial.print(shuntvoltage); Serial.println(" mV");
+  Serial.print("Load Voltage:  "); Serial.print(loadvoltage); Serial.println(" V");
+  Serial.print("Current:       "); Serial.print(current_mA); Serial.println(" mA");
+  Serial.print("Power:         "); Serial.print(power_mW); Serial.println(" mW");
+  Serial.println("");
+
+  delay(2000);
+*/
+  // Initialize the INA219.
+  // By default the initialization will use the largest range (32V, 2A).  However
+  // you can call a setCalibration function to change this range (see comments).
+  // To use a slightly lower 32V, 1A range (higher precision on amps):
+  //ina219.setCalibration_32V_1A();
+  // Or to use a lower 16V, 400mA range (higher precision on volts and amps):
+  //ina219.setCalibration_16V_400mA();
+
+
+}
